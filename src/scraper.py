@@ -1,10 +1,15 @@
-# Yelp scraper implementation
-
-
-#!/usr/bin/env python3
 """
-🚀 ULTIMATE YELP SCRAPER: PROXY POOL + SELENIUM + RESUME + CAPTCHA + CACHED GECKODRIVER CHECK
-Combines cached geckodriver detection with your proxy pool + scraper
+🚀 ULTIMATE YELP SCRAPER: PROXY POOL + SELENIUM + RESUME + CAPTCHA + CACHED GECKODRIVER
+
+Scrapes Yelp business data for home services across qualified ZIP codes.
+Uses proxy pool rotation, Datadome captcha solving, and resume capability.
+
+Input:
+- datasets/raw/zips_zctas_states.csv (ZIP ↔ ZCTA mapping)
+- datasets/output/busy_families_housing.csv (qualified ZIPs from analyzer)
+
+Output:
+- datasets/scraped/Qualified_Scrapes/yelp_*.csv (scraped business data)
 """
 
 import configparser
@@ -34,9 +39,10 @@ from webdriver_manager.firefox import GeckoDriverManager
 from bs4 import BeautifulSoup
 from itertools import cycle
 
-# ============================================================================= #
-# 🔍 CACHED GECKODRIVER DETECTOR (your first script)
-# ============================================================================= #
+
+# =============================================================================
+# 🔍 CACHED GECKODRIVER DETECTOR
+# =============================================================================
 
 def find_cached_geckodriver():
     """Find existing geckodriver.exe in webdriver_manager cache"""
@@ -53,32 +59,43 @@ def find_cached_geckodriver():
                 full_path = os.path.join(root, file)
                 size = os.path.getsize(full_path)
                 
-                # Mask username in path display (C:\users\username → C:\users\...)
+                # Mask username in path
                 display_path = str(full_path)
                 display_path = re.sub(r'C:\\users\\[^\\]+', r'C:\\users\\...', display_path, flags=re.IGNORECASE)
                 
                 print(f"✅ FOUND: {display_path}")
                 print(f"   Size: {size:,} bytes")
                 return full_path
+    
     print("❌ No cached geckodriver found")
     return None
 
-# ============================================================================= #
+
+# =============================================================================
 # CONFIG + DIRECTORIES
-# ============================================================================= #
-DATA_DIR = Path("Datasets")
-YELP_DIR = Path("Qualified_Scrapes")
+# =============================================================================
+
+DATA_DIR = Path("datasets/raw")
+YELP_DIR = Path("datasets/scraped/Qualified_Scrapes")
 MAX_CAPTCHA_TRIES = 3
 MAX_TESTS = 30  # Test first N proxies
 
 SERVICES = [
     "Soft washing",
-    # Add more services here
+    "Junk removal",
+    "Tree service",
+    "Pressure washing",
+    "Gutter cleaning",
+    "Window cleaning",
+    "Asphalt/concrete work",
+    "Driveway sealing",
 ]
 
-# ============================================================================= #
+
+# =============================================================================
 # 🧪 PROXY POOL MANAGER
-# ============================================================================= #
+# =============================================================================
+
 class USProxyPool:
     def __init__(self):
         self.all_proxies = []
@@ -137,9 +154,11 @@ class USProxyPool:
     def get_next_proxy(self):
         return next(self.proxy_cycle)
 
-# ============================================================================= #
+
+# =============================================================================
 # FIXED SELENIUM + PROXY CLASS WITH CACHED DRIVER SUPPORT
-# ============================================================================= #
+# =============================================================================
+
 class ProxyYelpScraper:
     def __init__(self, proxy_pool: USProxyPool, profile_name="default-release", cached_driver_path=None):
         self.proxy_pool = proxy_pool
@@ -328,14 +347,20 @@ class ProxyYelpScraper:
             except: 
                 pass
 
-# ============================================================================= #
+
+# =============================================================================
 # MAIN EXECUTION
-# ============================================================================= #
+# =============================================================================
+
 def sanitize_filename(s: str) -> str:
+    """Sanitize string for use as filename"""
     return re.sub(r'[^a-zA-Z0-9_\\s-]', '_', str(s)).replace(' ', '_').strip()
 
+
 def get_state_city(row):
+    """Extract state and city from row"""
     return str(row['ZIP']).strip(), str(row['STATE']).strip(), str(row['CITY']).strip()
+
 
 def process_zips(service: str, qualified_zips: pd.DataFrame, proxy_scraper: ProxyYelpScraper):
     """Process ZIPs with proxy rotation + resume capability"""
@@ -380,12 +405,17 @@ def process_zips(service: str, qualified_zips: pd.DataFrame, proxy_scraper: Prox
     
     return successful_count
 
+
 async def main():
     """🚀 COMPLETE EXECUTION WITH CACHED DRIVER CHECK"""
+    print("\n" + "="*80)
+    print("🚀 YELP SCRAPER INITIALIZING")
+    print("="*80)
+    
     YELP_DIR.mkdir(exist_ok=True)
     
     # Step 0: Check for cached geckodriver FIRST
-    print("🔍 INITIALIZING...")
+    print("\n🔍 INITIALIZING...")
     cached_driver = find_cached_geckodriver()
     
     # Step 1: Build proxy pool
@@ -399,12 +429,17 @@ async def main():
     # Step 2: Load ZIP data
     print("\n📊 Loading ZIP data...")
     zips_df = pd.read_csv(DATA_DIR / "zips_zctas_states.csv", dtype={"ZIP": str, "ZCTA": str})
-    households_df = pd.read_csv(DATA_DIR / "busy_families_housing.csv", 
-                              usecols=["Geography", "Homeownership%", "MedianIncome", "LargeHH%"])
-    households_df["ZCTA"] = households_df["Geography"].str[-5:]
-    qualified_zips = zips_df.merge(households_df, on="ZCTA")
     
-    print(f"✅ {len(qualified_zips)} qualified ZIPs loaded")
+    # Check if busy_families_housing.csv exists
+    housing_file = DATA_DIR / "busy_families_housing.csv"
+    if housing_file.exists():
+        households_df = pd.read_csv(housing_file, usecols=["Geography", "Homeownership%", "MedianIncome", "LargeHH%"])
+        households_df["ZCTA"] = households_df["Geography"].str[-5:]
+        qualified_zips = zips_df.merge(households_df, on="ZCTA")
+        print(f"✅ {len(qualified_zips)} qualified ZIPs loaded (from busy_families_housing.csv)")
+    else:
+        print("⚠️ busy_families_housing.csv not found, using all ZIPs")
+        qualified_zips = zips_df
     
     # Step 3: Scrape with proxy rotation + cached driver
     scraper = ProxyYelpScraper(proxy_pool, profile_name="default-release", cached_driver_path=cached_driver)
@@ -418,7 +453,11 @@ async def main():
         n_done = process_zips(service, qualified_zips, scraper)
         print(f"✅ {service}: {n_done}/{len(qualified_zips)} ZIPs")
     
-    print("\n🏆 ALL SERVICES COMPLETE!")
+    print("\n" + "="*80)
+    print("🏆 ALL SERVICES COMPLETE!")
+    print("="*80)
+    print(f"\nNext: Run src/business_count_processor.py to process scraped data")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

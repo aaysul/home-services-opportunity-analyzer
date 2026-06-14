@@ -3,7 +3,7 @@
 Analyze ZIP codes × home services to find high-opportunity markets using:
 - 📈 **Demand Growth** (pytrends CAGR 2021-2025)
 - 🏡 **Census Data** (homeownership, income, household size)
-- 🏪 **Competition** (Yelp business scrapes)
+- 🏪 **Competition** (Web scrapes)
 
 ---
 
@@ -15,7 +15,7 @@ Finds the best ZIP codes to launch home services based on:
 |---|---|---|
 | **CAGR (Demand Growth)** | Google Trends (2021-2025) | 40% |
 | **Homeownership + Income** | US Census ACS 2023 | 30% |
-| **Competition (Low)** | Yelp Scrapes | 30% |
+| **Competition (Low)** | Scrapes | 30% |
 
 **Output:** Top ZIP codes ranked by service with composite scores.
 
@@ -49,7 +49,7 @@ python src/zip_service_analyzer.py
 
 home-services-opportunity-analyzer/
 ├── src/
-│ ├── scraper.py # Yelp scraper (proxy pool + captcha)
+│ ├── scraper.py # Scraper (proxy pool + captcha)
 │ ├── business_count_processor.py # Process scraped data → business counts
 │ ├── zip_zcta_crosswalk.py # Create ZIP ↔ ZCTA mapping
 │ ├── pytrends_fetcher.py # Fetch demand from Google Trends
@@ -69,7 +69,7 @@ home-services-opportunity-analyzer/
 │ │ ├── usps_zip_locale_detail.csv
 │ │ └── zips_zctas_states.csv # Generated crosswalk
 │ ├── scraped/ # Scraped data (NOT tracked)
-│ │ ├── Qualified_Scrapes/ # Raw Yelp CSVs
+│ │ ├── Qualified_Scrapes/ # Raw  CSVs
 │ │ └── business_count_by_zip_with_reviews.csv
 │ ├── demand/ # Demand data (NOT tracked)
 │ │ ├── pytrends_raw/ # Raw pytrends output
@@ -99,29 +99,41 @@ STEP 1: ZIP ↔ ZCTA CROSSWALK
 src/zip_zcta_crosswalk.py
 Input: zip_to_zcta_crosswalk.xlsx + usps_zip_locale_detail.csv
 Output: datasets/raw/zips_zctas_states.csv
-↓ STEP 2: YELP SCRAPER (hours - may run overnight)
+
+
+↓ STEP 2:  SCRAPER (hours - may run overnight)
 src/scraper.py
 Input: zips_zctas_states.csv + qualified ZIPs
-Output: datasets/scraped/Qualified_Scrapes/yelp_*.csv
+Output: datasets/scraped/Qualified_Scrapes/_*.csv
 Features: Proxy pool + captcha solving + resume capability
+
+
 ↓ STEP 3: PROCESS SCRAPED DATA
 src/business_count_processor.py
-Input: datasets/scraped/Qualified_Scrapes/yelp_*.csv
+Input: datasets/scraped/Qualified_Scrapes/_*.csv
 Output: datasets/scraped/business_count_by_zip_with_reviews.csv
+
+
 ↓ STEP 4: FETCH DEMAND (10-20 minutes)
 src/pytrends_fetcher.py
 Input: Google Trends API
 Output: datasets/demand/pytrends_raw/services_trends_*.csv
 Features: Exponential backoff + retry logic
+
+
 ↓ STEP 5: PROCESS DEMAND
 src/demand_pytrends.py
 Input: Raw pytrends CSV
 Output: datasets/demand/hs_states_demand_2021-2025.csv
+
+
 ↓ STEP 6: COMPUTE CAGR
 src/cagr_computer.py
 Input: Demand matrix
 Output: datasets/demand/demand_cagr_by_state.csv
 Formula: CAGR = (end/start)^(1/4) - 1 (2021-2025)
+
+
 ↓ STEP 7: ZIP-LEVEL SCORING (FINAL OUTPUT)
 src/zip_service_analyzer.py
 Input: Census + Business + CAGR + ZIP mapping
@@ -158,7 +170,7 @@ pip install -r requirements.txt
 **Key packages:**
 - `pandas` → Data processing
 - `pytrends` → Google Trends API
-- `seleniumwire` → Yelp scraping
+- `seleniumwire` →  scraping
 - `aiohttp` → Async proxy testing
 - `webdriver-manager` → Firefox driver
 - `beautifulsoup4` → Proxy page scraping
@@ -206,7 +218,7 @@ bash scripts/run_all.sh
 # Step 1: Create crosswalk
 python src/zip_zcta_crosswalk.py
 
-# Step 2: Scrape Yelp (run overnight - takes hours)
+# Step 2: Scrape  (run overnight - takes hours)
 python src/scraper.py
 
 # Step 3: Process scraped data
@@ -298,7 +310,7 @@ MAX_CAPTCHA_TRIES = 5
 **Problem:** "Firefox profile not found"
 ```bash
 # Solution: Create Firefox profile named "default-release"
-# Or change profile_name in ProxyYelpScraper()
+# Or change profile_name in ProxyScraper()
 ```
 
 ### pytrends Issues
@@ -381,7 +393,7 @@ MIT License
 Built with:
 - Google Trends (pytrends)
 - US Census Bureau (ACS data)
-- Yelp (scraped data)
+-  (scraped data)
 
 ---
 

@@ -1,0 +1,3 @@
+# pytrends Guide
+
+## Setup

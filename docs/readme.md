@@ -78,7 +78,7 @@ python src/zip_service_analyzer.py
 - `README.md` - This file
 
 ---
-
+'''
 ## 🔄 Pipeline Flow
 
 STEP 1: ZIP ↔ ZCTA CROSSWALK
@@ -126,8 +126,7 @@ Input: Census + Business + CAGR + ZIP mapping
 Output: datasets/output/top_zips_by_services_cagr.csv
 Score: 40% CAGR + 30% Ownership/Income + 30% Competition
 
-text
-
+'''
 ---
 
 ## 📋 Services Tracked

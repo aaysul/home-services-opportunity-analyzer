@@ -1,114 +1,62 @@
-# pytrends demand acquisition
+"""
+Process Raw pytrends Output into State-Level Demand Matrix
 
+Input:
+- services_trends_all_states_2021_2026_with_retries.csv (raw pytrends)
+
+Output:
+- hs_states_demand_2021-2025.csv (state demand matrix)
+"""
 
 import pandas as pd
-from pytrends.request import TrendReq
-import time
-import random
-from requests.exceptions import RequestException
-pd.set_option('future.no_silent_downcasting', True)
-
-# List of all US states (FIPS codes)
-us_states = [
-    'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
-    'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
-    'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
-    'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
-    'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
-]
 
 services = [
-    "Junk removal", "Tree service", "Pressure washing", 
-    "Gutter cleaning", "Window cleaning", "Asphalt/concrete work", 
-    "Driveway sealing", "Soft washing"
+    "Asphalt/concrete work",
+    "Driveway sealing",
+    "Gutter cleaning",
+    "Junk removal",
+    "Pressure washing",
+    "Soft washing",
+    "Tree service",
+    "Window cleaning",
 ]
 
-def fetch_trends_data(pytrends, service, geo, max_retries=5):
-    """Fetch trends data with exponential backoff retries"""
-    for attempt in range(max_retries):
-        try:
-            print(f"    Attempt {attempt + 1}/{max_retries} for {service} in {geo}")
-            pytrends.build_payload([service], cat=0, timeframe='2021-01-01 2026-01-01', geo=geo)
-            
-            # Try interest_over_time first
-            data = pytrends.interest_over_time()
-            if data.empty:
-                data = pytrends.interest_by_region(resolution='DMA', inc_low_vol=True, inc_geo_code=False)
-            
-            if not data.empty:
-                return data
-            
-        except Exception as e:
-            print(f"    Attempt {attempt + 1} failed: {str(e)}")
-            
-            if attempt < max_retries - 1:
-                # Exponential backoff: 1s, 2s, 4s, 8s
-                wait_time = (2 ** attempt) + random.uniform(0, 1)
-                print(f"    Retrying in {wait_time:.1f}s...")
-                time.sleep(wait_time)
-            else:
-                print(f"    Max retries exceeded for {service} in {geo}")
-    
-    return pd.DataFrame()
 
-# Connect to Google Trends
-print("Initializing Google Trends connection...")
-pytrends = TrendReq(hl='en-US', tz=360)
+def process_pytrends_output(
+    input_file='datasets/demand/pytrends_raw/services_trends_all_states_2021_2026_with_retries.csv',
+    output_file='datasets/demand/hs_states_demand_2021-2025.csv'
+):
+    print("\n" + "="*80)
+    print("🔄 PROCESSING PYTRENDS OUTPUT")
+    print("="*80)
 
-all_data = []
+    # Step 1: Read CSV with date parsing
+    print(f"📖 Reading: {input_file}")
+    search_df = pd.read_csv(input_file, parse_dates=['date'])[['date', 'geo', *services]].set_index('date')
+    print(f"  ✅ Loaded {len(search_df)} rows, {len(services)} services")
 
-# Process national data first
-for service in services:
-    print(f"\n=== Processing National: {service} ===")
-    data = fetch_trends_data(pytrends, service, 'US')
-    if not data.empty:
-        data['service'] = service
-        data['geo'] = 'US'
-        all_data.append(data.reset_index())
-    time.sleep(1)
+    # Step 2: Create pivot table
+    print("🔄 Creating pivot table...")
+    hs_demand = search_df.pivot_table(index=['date', 'geo'], values=services).fillna(0).round(1)
+    print(f"  ✅ Pivot created: {hs_demand.shape[0]} rows × {hs_demand.shape[1]} columns")
 
-# Process states
-for service in services:
-    print(f"\n{'='*60}")
-    print(f"=== Processing Service: {service} ===")
-    print(f"{'='*60}")
-    
-    state_count = 0
-    for state in us_states:
-        state_count += 1
-        print(f"State {state_count}/50: {state}")
-        
-        data = fetch_trends_data(pytrends, service, f'US-{state}')
-        if not data.empty:
-            data['service'] = service
-            data['geo'] = f'US-{state}'
-            all_data.append(data.reset_index())
-        
-        # Always sleep between requests (more aggressive rate limiting)
-        time.sleep(1 + random.uniform(0, 0.5))
-    
-    # Longer break between services
-    print(f"Completed {service}. Sleeping 5s...")
-    time.sleep(5)
+    # Step 3: Reset/set index
+    hs_demand = hs_demand.reset_index().set_index('date')
 
-# Save combined data
-if all_data:
-    print("\nCombining all data...")
-    combined_df = pd.concat(all_data, ignore_index=True)
-    
-    # Remove duplicate columns if they exist
-    combined_df = combined_df.loc[:, ~combined_df.columns.duplicated()]
-    
-    filename = 'services_trends_all_states_2021_2026_with_retries.csv'
-    combined_df.to_csv(filename, index=False)
-    
-    print(f"\n✅ Data saved to '{filename}'")
-    print(f"📊 Total records: {len(combined_df):,}")
-    print(f"📈 Services covered: {combined_df['service'].nunique()}")
-    print(f"🌎 Geos covered: {combined_df['geo'].nunique()}")
-    print("\nFirst few rows:")
-    print(combined_df.head())
-else:
-    print("❌ No data retrieved")
+    # Step 4: Clean geo codes
+    hs_demand['geo'] = hs_demand['geo'].str.replace('US-', '', regex=False)
+    print(f"  ✅ Geo codes cleaned")
 
-print("\n🎉 Script completed!")
+    # Step 5: Save (exclude national 'US')
+    state_demand = hs_demand.query("geo != 'US'")
+    state_demand.to_csv(output_file, index=True)
+    print(f"  ✅ Saved {len(state_demand)} rows to {output_file}")
+
+    print("\n✅ COMPLETE!")
+    return state_demand
+
+
+if __name__ == "__main__":
+    demand_df = process_pytrends_output()
+    print("\nSample:")
+    print(demand_df.head(10))

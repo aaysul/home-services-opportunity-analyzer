@@ -47,49 +47,35 @@ python src/zip_service_analyzer.py
 
 ## 📁 Project Structure
 
-home-services-opportunity-analyzer/
-├── src/
-│ ├── scraper.py # Scraper (proxy pool + captcha)
-│ ├── business_count_processor.py # Process scraped data → business counts
-│ ├── zip_zcta_crosswalk.py # Create ZIP ↔ ZCTA mapping
-│ ├── pytrends_fetcher.py # Fetch demand from Google Trends
-│ ├── demand_pytrends.py # Process raw pytrends → demand matrix
-│ ├── cagr_computer.py # Compute CAGR (2021-2025)
-│ ├── zip_service_analyzer.py # ZIP-level scoring (final output)
-│ ├── census_loader.py # Load ACS Census data
-│ ├── config.py # Configuration
-│ ├── helpers.py # Utility functions
-│ └── cli.py # Command-line entry point
-├── datasets/
-│ ├── raw/ # Source data (NOT tracked by Git)
-│ │ ├── ACSDP5Y2023.DP02-Data.csv
-│ │ ├── ACSDP5Y2023.DP03-Data.csv
-│ │ ├── ACSDP5Y2023.DP04-Data.csv
-│ │ ├── zip_to_zcta_crosswalk.xlsx
-│ │ ├── usps_zip_locale_detail.csv
-│ │ └── zips_zctas_states.csv # Generated crosswalk
-│ ├── scraped/ # Scraped data (NOT tracked)
-│ │ ├── Qualified_Scrapes/ # Raw  CSVs
-│ │ └── business_count_by_zip_with_reviews.csv
-│ ├── demand/ # Demand data (NOT tracked)
-│ │ ├── pytrends_raw/ # Raw pytrends output
-│ │ ├── hs_states_demand_2021-2025.csv
-│ │ └── demand_cagr_by_state.csv
-│ └── output/ # Final results (TRACKED)
-│ └── top_zips_by_services_cagr.csv
-├── scripts/
-│ ├── run_all.sh # Run entire pipeline
-│ └── run_pytrends_demand.sh # Run pytrends + demand steps
-├── tests/
-│ └── test_*.py # Unit tests
-├── docs/
-│ └── data_dictionary.md # Data docs
-├── notebooks/ # Jupyter notebooks
-├── requirements.txt
-├── .gitignore
-└── README.md
+- **src/** - Python source files
+  - `scraper.py` - Yelp scraper (proxy pool + captcha)
+  - `business_count_processor.py` - Process scraped data
+  - `zip_zcta_crosswalk.py` - Create ZIP ↔ ZCTA mapping
+  - `pytrends_fetcher.py` - Fetch demand from Google Trends
+  - `demand_pytrends.py` - Process raw pytrends → demand matrix
+  - `cagr_computer.py` - Compute CAGR (2021-2025)
+  - `zip_service_analyzer.py` - ZIP-level scoring (final output)
+  - `census_loader.py` - Load ACS Census data
+  - `config.py` - Configuration
+  - `helpers.py` - Utility functions
+  - `cli.py` - Command-line entry point
 
-text
+- **datasets/** - Data files (not tracked by Git)
+  - `raw/` - Source data (Census, ZIP mappings)
+  - `scraped/` - Scraped Yelp data
+  - `demand/` - pytrends demand data
+  - `output/` - Final results (tracked)
+
+- **scripts/** - Shell scripts
+  - `run_all.sh` - Run entire pipeline
+  - `run_pytrends_demand.sh` - Run pytrends + demand steps
+
+- **tests/** - Unit tests
+- **docs/** - Documentation
+- **notebooks/** - Jupyter notebooks
+- `requirements.txt` - Python dependencies
+- `.gitignore` - Git ignore file
+- `README.md` - This file
 
 ---
 

@@ -1,5 +1,5 @@
 """
-🚀 ULTIMATE YELP SCRAPER: PROXY POOL + SELENIUM + RESUME + CAPTCHA + CACHED GECKODRIVER
+🚀 ULTIMATE SCRAPER: PROXY POOL + SELENIUM + RESUME + CAPTCHA + CACHED GECKODRIVER
 
 Scrapes Yelp business data for home services across qualified ZIP codes.
 Uses proxy pool rotation, Datadome captcha solving, and resume capability.
@@ -9,7 +9,7 @@ Input:
 - datasets/output/busy_families_housing.csv (qualified ZIPs from analyzer)
 
 Output:
-- datasets/scraped/Qualified_Scrapes/yelp_*.csv (scraped business data)
+- datasets/scraped/Qualified_Scrapes/_*.csv (scraped business data)
 """
 
 import configparser
@@ -76,7 +76,7 @@ def find_cached_geckodriver():
 # =============================================================================
 
 DATA_DIR = Path("datasets/raw")
-YELP_DIR = Path("datasets/scraped/Qualified_Scrapes")
+SCRAPE_DIR = Path("datasets/scraped/Qualified_Scrapes")
 MAX_CAPTCHA_TRIES = 3
 MAX_TESTS = 30  # Test first N proxies
 
@@ -364,7 +364,7 @@ def get_state_city(row):
 
 def process_zips(service: str, qualified_zips: pd.DataFrame, proxy_scraper: ProxyYelpScraper):
     """Process ZIPs with proxy rotation + resume capability"""
-    temp_file = YELP_DIR / "remaining_zips.csv"
+    temp_file = SCRAPE_DIR / "remaining_zips.csv"
     
     if temp_file.exists():
         remaining_df = pd.read_csv(temp_file, dtype={"zip_code": str})
@@ -384,10 +384,10 @@ def process_zips(service: str, qualified_zips: pd.DataFrame, proxy_scraper: Prox
         
         if not df.empty:
             clean_service = service.lower().replace(" ", "_")
-            folder = YELP_DIR / sanitize_filename(state) / sanitize_filename(city) / clean_service
+            folder = SCRAPE_DIR / sanitize_filename(state) / sanitize_filename(city) / clean_service
             folder.mkdir(parents=True, exist_ok=True)
             
-            filename = f"yelp_{clean_service}_{zip_code}.csv"
+            filename = f"_{clean_service}_{zip_code}.csv"
             filepath = folder / filename
             df.to_csv(filepath, index=False)
             print(f"💾 SAVED {len(df)} → {filepath}")
@@ -412,7 +412,7 @@ async def main():
     print("🚀 YELP SCRAPER INITIALIZING")
     print("="*80)
     
-    YELP_DIR.mkdir(exist_ok=True)
+    SCRAPE_DIR.mkdir(exist_ok=True)
     
     # Step 0: Check for cached geckodriver FIRST
     print("\n🔍 INITIALIZING...")
@@ -447,7 +447,7 @@ async def main():
     for service in SERVICES:
         print(f"\n{'='*80}")
         print(f"🚀 SERVICE: {service}")
-        print(f"📁 Output: {YELP_DIR}")
+        print(f"📁 Output: {SCRAPE_DIR}")
         print(f"{'='*80}")
         
         n_done = process_zips(service, qualified_zips, scraper)

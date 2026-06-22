@@ -257,66 +257,9 @@ Competition maximum: 3.0
 | Score | Composite score (0-100) |
 
 
----
 
-## 🔍 Troubleshooting
-
-### Scraper Issues
-
-```
-Problem: "No live proxies found"
-Fix: Add proxies to USProxyPool.__init__()
-     self.us_proxies = ["123.45.67.89:8080"]
-
-Problem: "CAPTCHA not solved"
-Fix: Increase MAX_CAPTCHA_TRIES = 5
-
-Problem: "Firefox profile not found"
-Fix: Create profile named "default-release"
-```
-
-
-### pytrends Issues
-
-```
-Problem: "429 Too Many Requests"
-Fix: Increase RETRY_DELAY = 10
-
-Problem: "No data returned"
-Fix: Adjust timeframe format
-```
-
-
-### Data Issues
-
-```
-Problem: "File not found"
-Fix: Download Census data (see Setup)
-
-Problem: "Empty output"
-Fix: Lower filters in analyzer
-```
-
-
----
-
-## 🧪 Testing
-
-```bash
-pytest tests/ -v
-```
-
-
----
-
-## 📄 License
-
-MIT License
-
----
 
 ## 🙏 Credits
 
 - Google Trends (pytrends)
 - US Census Bureau (ACS data)
-- Yelp (scraped data)

@@ -320,9 +320,3 @@ MIT License
 - Google Trends (pytrends)
 - US Census Bureau (ACS data)
 - Yelp (scraped data)
-
----
-
-**Made for home services market analysis**
-
-```

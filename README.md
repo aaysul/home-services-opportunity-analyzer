@@ -1,3 +1,5 @@
+<img width="1248" height="832" alt="Project Image" src="https://github.com/user-attachments/assets/06a0b2fb-3da3-4f27-bafe-0c6a0ffa8483" />
+
 # 🏠 Home Services Opportunity Analyzer
 
 **CAGR-Based ZIP Code & Service Opportunity Finder**
